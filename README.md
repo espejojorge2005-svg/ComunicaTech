@@ -18,8 +18,4 @@ ComunicaTech es una aplicación nativa de Android diseñada para cerrar la brech
 - **Arquitectura:** MVVM (Model-View-ViewModel)
 - **Librerías:** Coil (Carga de imágenes), Retrofit (Consumo de APIs), Corrutinas de Kotlin.
 
-## 📸 Vista Previa
-*(Aquí puedes insertar las capturas de pantalla que me has mandado)*
-
----
 Desarrollado por [Jorge Espejo](https://github.com/espejojorge2005-svg) - Estudiante de Ingeniería de Sistemas en UPN.
