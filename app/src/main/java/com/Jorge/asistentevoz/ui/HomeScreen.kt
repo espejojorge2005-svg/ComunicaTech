@@ -17,9 +17,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.painterResource
+import com.Jorge.asistentevoz.R
 import coil.compose.AsyncImage
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 
@@ -141,40 +143,40 @@ fun HomeScreen(
             ) {
                 // Tarjeta 1: Modo Oyente (Chatbot)
                 TarjetaMenu(
-                    titulo = "Modo Oyente",
-                    subtitulo = "Conversación fluida por voz y texto.",
+                    titulo = stringResource(R.string.home_card_listener_title),
+                    subtitulo = stringResource(R.string.home_card_listener_subtitle),
                     icono = Icons.Default.Mic,
                     onClick = onModoOyenteClick
                 )
 
                 // Tarjeta 2: Modo Sordo (Señas)
                 TarjetaMenu(
-                    titulo = "Modo Sordo",
-                    subtitulo = "Traductor visual a lengua de señas.",
+                    titulo = stringResource(R.string.home_card_deaf_title),
+                    subtitulo = stringResource(R.string.home_card_deaf_subtitle),
                     icono = Icons.Default.PanTool,
                     onClick = onModoSordoClick
                 )
 
                 // Tarjeta 3: Noticias Tech
                 TarjetaMenu(
-                    titulo = "Noticias Tech",
-                    subtitulo = "Entérate de lo último en tecnología.",
+                    titulo = stringResource(R.string.home_card_news_title),
+                    subtitulo = stringResource(R.string.home_card_news_subtitle),
                     icono = Icons.Default.Public,
                     onClick = onNewsClick
                 )
 
                 // Tarjeta 4: Mis Chats
                 TarjetaMenu(
-                    titulo = "Mis Chats",
-                    subtitulo = "Revisa tus conversaciones recientes.",
+                    titulo = stringResource(R.string.home_card_chats_title),
+                    subtitulo = stringResource(R.string.home_card_chats_subtitle),
                     icono = Icons.Default.Chat,
                     onClick = onConversationsClick
                 )
 
                 // Tarjeta 5: Mapa de Ayuda
                 TarjetaMenu(
-                    titulo = "Mapa de Ayuda",
-                    subtitulo = "Encuentra hospitales y comisarías.",
+                    titulo = stringResource(R.string.home_card_map_title),
+                    subtitulo = stringResource(R.string.home_card_map_subtitle),
                     icono = Icons.Default.Map,
                     onClick = onEmergencyMapClick
                 )

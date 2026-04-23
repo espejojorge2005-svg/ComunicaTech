@@ -2,6 +2,7 @@ package com.Jorge.asistentevoz
 
 import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
@@ -9,20 +10,28 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.Jorge.asistentevoz.ui.*
+import com.Jorge.asistentevoz.navigation.AppNavigation
+import com.Jorge.asistentevoz.navigation.AppRoutes
 import com.Jorge.asistentevoz.ui.theme.AsistenteVozTheme
 import com.google.firebase.auth.FirebaseAuth
 import java.util.Locale
 
+/**
+ * Punto de entrada de la aplicación.
+ *
+ * Responsabilidades:
+ *  1. Inicializar dependencias de ciclo de vida (FirebaseAuth, TTS, SplashScreen).
+ *  2. Gestionar el permiso de notificaciones con UX amigable.
+ *  3. Delegar todo el grafo de navegación a [AppNavigation].
+ */
 class MainActivity : ComponentActivity() {
 
     private lateinit var auth: FirebaseAuth
@@ -33,165 +42,103 @@ class MainActivity : ComponentActivity() {
 
         auth = FirebaseAuth.getInstance()
         val sharedPreferences = getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-        val isFirstLaunch = sharedPreferences.getBoolean("is_first_launch", true)
-        val currentUser = auth.currentUser
+        val isFirstLaunch     = sharedPreferences.getBoolean("is_first_launch", true)
 
-        val startDest = when {
-            isFirstLaunch -> "onboarding"
-            currentUser == null -> "login"
-            else -> "home"
+        // Destino inicial: calculado una sola vez, fuera del árbol Compose.
+        val startDestination = when {
+            isFirstLaunch            -> AppRoutes.Onboarding.route
+            auth.currentUser == null -> AppRoutes.Login.route
+            else                     -> AppRoutes.Home.route
         }
 
         setContent {
             AsistenteVozTheme {
-                val context = LocalContext.current
-                var tts by remember { mutableStateOf<TextToSpeech?>(null) }
+                val context       = LocalContext.current
                 val navController = rememberNavController()
 
-                // --- MAGIA PARA PEDIR PERMISO DE NOTIFICACIONES (Android 13+) ---
+                // ── TextToSpeech ────────────────────────────────────────────────
+                var tts by remember { mutableStateOf<TextToSpeech?>(null) }
+                DisposableEffect(context) {
+                    val engine = TextToSpeech(context) { status ->
+                        if (status == TextToSpeech.SUCCESS) {
+                            tts?.language = Locale("es", "PE")
+                        }
+                    }
+                    tts = engine
+                    onDispose {
+                        engine.stop()
+                        engine.shutdown()
+                    }
+                }
+
+                // ── Permiso de Notificaciones (Android 13+) ─────────────────────
+                var showPermissionDialog by remember { mutableStateOf(false) }
+
                 val notificationPermissionLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission(),
                     onResult = { isGranted ->
-                        if (isGranted) {
-                            println("¡Permiso de notificaciones concedido!")
-                        } else {
-                            println("El usuario denegó las notificaciones.")
-                        }
+                        if (isGranted) println("¡Permiso de notificaciones concedido!")
+                        else          println("El usuario denegó las notificaciones.")
                     }
                 )
 
                 LaunchedEffect(Unit) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    }
-                }
-                // -----------------------------------------------------------------
+                        val alreadyGranted = ContextCompat.checkSelfPermission(
+                            context, Manifest.permission.POST_NOTIFICATIONS
+                        ) == PackageManager.PERMISSION_GRANTED
 
-                DisposableEffect(context) {
-                    val textToSpeech = TextToSpeech(context) { status ->
-                        if (status == TextToSpeech.SUCCESS) {
-                            tts?.language = Locale("es", "PE")
-                        }
-                    }
-                    tts = textToSpeech
-                    onDispose {
-                        textToSpeech.stop()
-                        textToSpeech.shutdown()
+                        if (!alreadyGranted) showPermissionDialog = true
                     }
                 }
 
-                Scaffold { innerPadding ->
-                    NavHost(
-                        navController = navController,
-                        startDestination = startDest,
-                        modifier = Modifier.padding(innerPadding)
-                    ) {
-                        composable("onboarding") {
-                            OnboardingScreen(
-                                onFinishTutorial = {
-                                    sharedPreferences.edit().putBoolean("is_first_launch", false).apply()
-                                    navController.navigate("login") {
-                                        popUpTo("onboarding") { inclusive = true }
-                                    }
-                                }
+                if (showPermissionDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showPermissionDialog = false },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
                             )
-                        }
-
-                        composable("login") {
-                            LoginScreen(
-                                onLoginSuccess = { nombre, photoUrl ->
-                                    sharedPreferences.edit()
-                                        .putString("user_name", nombre)
-                                        .putString("photo_url", photoUrl ?: "")
-                                        .apply()
-                                    navController.navigate("home") {
-                                        popUpTo("login") { inclusive = true }
-                                    }
-                                },
-                                onNavigateToRegister = { navController.navigate("register") }
+                        },
+                        title = {
+                            Text(
+                                text = "Activa las Notificaciones",
+                                style = MaterialTheme.typography.titleLarge
                             )
-                        }
-
-                        composable("register") {
-                            RegisterScreen(
-                                onRegisterSuccess = { nombre, photoUrl ->
-                                    sharedPreferences.edit()
-                                        .putString("user_name", nombre)
-                                        .putString("photo_url", photoUrl ?: "")
-                                        .apply()
-                                    navController.navigate("home") {
-                                        popUpTo("register") { inclusive = true }
-                                        popUpTo("login") { inclusive = true }
-                                    }
-                                },
-                                onNavigateToLogin = { navController.popBackStack() }
+                        },
+                        text = {
+                            Text(
+                                text = "Para mantenerte conectado, necesitamos enviarte notificaciones de nuevos mensajes.",
+                                style = MaterialTheme.typography.bodyMedium
                             )
+                        },
+                        confirmButton = {
+                            Button(onClick = {
+                                showPermissionDialog = false
+                                notificationPermissionLauncher.launch(
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                )
+                            }) { Text("Aceptar") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showPermissionDialog = false }) {
+                                Text("Ahora no")
+                            }
                         }
-
-                        composable("home") {
-                            val currentName = sharedPreferences.getString("user_name", "Usuario") ?: "Usuario"
-                            val photoUrl = sharedPreferences.getString("photo_url", "") ?: ""
-                            HomeScreen(
-                                nombreUsuario = currentName,
-                                photoUrl = photoUrl,
-                                onModoOyenteClick = { navController.navigate("chat") },
-                                onModoSordoClick = { navController.navigate("senas") },
-                                onSettingsClick = { navController.navigate("settings") },
-                                onNewsClick = { navController.navigate("news") },
-                                onScannerClick = { navController.navigate("scanner") },
-                                onProfileClick = { navController.navigate("profile") },
-                                onConversationsClick = { navController.navigate("conversations") },
-                                onEmergencyMapClick = { navController.navigate("emergency_map") }
-                            )
-                        }
-
-                        composable("chat") { ChatScreen(onBackClick = { navController.popBackStack() }) }
-                        composable("senas") { SignLanguageScreen(tts = tts, onBackClick = { navController.popBackStack() }) }
-                        composable("news") { NewsScreen(onBackClick = { navController.popBackStack() }) }
-                        composable("profile") { ProfileScreen(onBackClick = { navController.popBackStack() }) }
-                        composable("emergency_map") { EmergencyMapScreen(onBackClick = { navController.popBackStack() }) }
-                        composable("conversations") { 
-                            ConversationsListScreen(
-                                onBackClick = { navController.popBackStack() },
-                                onChatClick = { contactId -> navController.navigate("remote_chat/$contactId") }
-                            ) 
-                        }
-                        composable(
-                            "remote_chat/{contactId}",
-                            arguments = listOf(androidx.navigation.navArgument("contactId") { type = androidx.navigation.NavType.StringType })
-                        ) { backStackEntry ->
-                            val contactId = backStackEntry.arguments?.getString("contactId") ?: ""
-                            RemoteChatScreen(
-                                otherUserId = contactId,
-                                tts = tts,
-                                onBackClick = { navController.popBackStack() }
-                            )
-                        }
-                        composable("scanner") { 
-                            ScannerScreen(
-                                tts = tts, 
-                                onBackClick = { navController.popBackStack() },
-                                onContactScanned = { contactId ->
-                                    navController.navigate("remote_chat/$contactId") {
-                                        popUpTo("scanner") { inclusive = true }
-                                    }
-                                }
-                            ) 
-                        }
-
-                        composable("settings") {
-                            SettingsScreen(
-                                tts = tts,
-                                onBackClick = { navController.popBackStack() },
-                                onLogoutClick = {
-                                    auth.signOut()
-                                    sharedPreferences.edit().remove("user_name").apply()
-                                    navController.navigate("login") { popUpTo(0) { inclusive = true } }
-                                }
-                            )
-                        }
-                    }
+                    )
                 }
+                // ────────────────────────────────────────────────────────────────
+
+                // ── Grafo de navegación (responsabilidad delegada) ───────────────
+                AppNavigation(
+                    navController      = navController,
+                    startDestination   = startDestination,
+                    tts                = tts,
+                    sharedPreferences  = sharedPreferences,
+                    auth               = auth
+                )
             }
         }
     }

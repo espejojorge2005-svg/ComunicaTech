@@ -1,3 +1,36 @@
 <resources>
-    <string name="app_name">Comunica Tech</string>
+    <string name="app_name">ComunicaTech</string>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         HomeScreen — Tarjetas de menú principal
+         ══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Tarjeta 1: Modo Oyente -->
+    <string name="home_card_listener_title">Modo Oyente</string>
+    <string name="home_card_listener_subtitle">Conversación fluida por voz y texto.</string>
+
+    <!-- Tarjeta 2: Modo Sordo -->
+    <string name="home_card_deaf_title">Modo Sordo</string>
+    <string name="home_card_deaf_subtitle">Traductor visual a lengua de señas.</string>
+
+    <!-- Tarjeta 3: Noticias Tech -->
+    <string name="home_card_news_title">Noticias Tech</string>
+    <string name="home_card_news_subtitle">Entérate de lo último en tecnología.</string>
+
+    <!-- Tarjeta 4: Mis Chats -->
+    <string name="home_card_chats_title">Mis Chats</string>
+    <string name="home_card_chats_subtitle">Revisa tus conversaciones recientes.</string>
+
+    <!-- Tarjeta 5: Mapa de Ayuda -->
+    <string name="home_card_map_title">Mapa de Ayuda</string>
+    <string name="home_card_map_subtitle">Encuentra hospitales y comisarías.</string>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Diálogo de permisos de notificaciones (MainActivity)
+         ══════════════════════════════════════════════════════════════════ -->
+    <string name="notification_permission_title">Activa las Notificaciones</string>
+    <string name="notification_permission_body">Para mantenerte conectado, necesitamos enviarte notificaciones de nuevos mensajes.</string>
+    <string name="notification_permission_accept">Aceptar</string>
+    <string name="notification_permission_dismiss">Ahora no</string>
+
 </resources>

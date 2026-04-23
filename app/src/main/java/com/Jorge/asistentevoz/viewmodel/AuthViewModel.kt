@@ -48,21 +48,29 @@ class AuthViewModel : ViewModel() {
             try {
                 val user = auth.currentUser ?: return@launch
                 val storageRef = storage.reference.child("profile_pics/${user.uid}.jpg")
-                
+
                 // a) Subir a Firebase Storage y b) Obtener downloadUrl
                 storageRef.putFile(uri).await()
                 val downloadUrl = storageRef.downloadUrl.await()
-                
+
                 // c) Actualizar el perfil de Firebase Auth
                 val profileUpdates = UserProfileChangeRequest.Builder()
                     .setPhotoUri(downloadUrl)
                     .build()
                 user.updateProfile(profileUpdates).await()
-                
-                // d) CRÍTICO: Actualizar el profileImageUrl
+
+                // d) Sincronizar con Firestore para consistencia total
+                db.collection("users").document(user.uid)
+                    .update("photoUrl", downloadUrl.toString()).await()
+
+                // e) Actualizar el estado local observable
                 _profileImageUrl.value = downloadUrl.toString()
+
             } catch (e: Exception) {
-                // Manejo de errores de subida
+                // Propagar el error a la UI para que pueda mostrarlo
+                _authState.value = AuthState.Error(
+                    e.localizedMessage ?: "Error al subir la imagen de perfil."
+                )
             }
         }
     }
