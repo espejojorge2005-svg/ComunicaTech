@@ -4,12 +4,15 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -18,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -25,6 +29,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.Jorge.asistentevoz.viewmodel.AuthState
@@ -39,7 +44,6 @@ fun RegisterScreen(
 ) {
     val isLoading by viewModel.isLoading
     val errorMessage by viewModel.errorMessage
-
     val authState by viewModel.authState
     var showDialog by remember { mutableStateOf(false) }
 
@@ -51,19 +55,19 @@ fun RegisterScreen(
 
     if (showDialog) {
         AlertDialog(
-            onDismissRequest = { /* No permitir descartar */ },
-            title = { Text("Verifica tu correo", fontWeight = FontWeight.Bold) },
-            text = { Text("Hemos enviado un correo de verificación. Por favor, revisa tu bandeja de entrada o carpeta de spam para activar tu cuenta antes de iniciar sesión.") },
+            onDismissRequest = { },
+            title = { Text("¡Ya casi terminas! 📧", fontWeight = FontWeight.Black) },
+            text = {
+                Text(
+                    "Enviamos un correo de verificación a tu dirección. Revisa tu bandeja de entrada o spam para activar tu cuenta.",
+                    textAlign = TextAlign.Center
+                )
+            },
             confirmButton = {
                 Button(
-                    onClick = {
-                        showDialog = false
-                        viewModel.resetState()
-                        onNavigateToLogin()
-                    }
-                ) {
-                    Text("Entendido")
-                }
+                    onClick = { showDialog = false; viewModel.resetState(); onNavigateToLogin() },
+                    shape = RoundedCornerShape(16.dp)
+                ) { Text("Ir a iniciar sesión") }
             }
         )
     }
@@ -73,46 +77,73 @@ fun RegisterScreen(
     var password by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
+    val scrollState = rememberScrollState()
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        imageUri = uri
-    }
+    ) { uri: Uri? -> imageUri = uri }
 
-    val fondoDegradado = Brush.verticalGradient(
+    val backgroundGradient = Brush.verticalGradient(
         colors = listOf(
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-            MaterialTheme.colorScheme.background
+            Color(0xFF0F2027),
+            Color(0xFF203A43),
+            Color(0xFF2C5364)
         )
     )
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(fondoDegradado)
-            .padding(24.dp),
+            .background(backgroundGradient)
+            .padding(horizontal = 24.dp),
         contentAlignment = Alignment.Center
     ) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(32.dp),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-            shadowElevation = 16.dp
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(scrollState),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Spacer(modifier = Modifier.height(48.dp))
+
+            // Header
+            Text(
+                text = "Crear Cuenta",
+                style = MaterialTheme.typography.displaySmall,
+                color = Color.White,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 1.sp
+            )
+            Text(
+                text = "Únete a ComunicaTech hoy",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color(0xFFB0BEC5),
+                fontWeight = FontWeight.Light,
+                modifier = Modifier.padding(top = 4.dp, bottom = 32.dp)
+            )
+
+            // Avatar selector con ring animado
+            Box(
+                modifier = Modifier.size(110.dp),
+                contentAlignment = Alignment.Center
             ) {
-                // Selector de foto de perfil
+                // Ring exterior
+                Box(
+                    modifier = Modifier
+                        .size(110.dp)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.sweepGradient(
+                                listOf(Color(0xFF00E5FF), Color(0xFF0083B0), Color(0xFF00E5FF))
+                            )
+                        )
+                )
+                // Circulo interior clickable
                 Box(
                     modifier = Modifier
                         .size(100.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .background(if (imageUri == null) Color(0xFF1A2A35) else Color.Transparent)
                         .clickable { launcher.launch("image/*") },
                     contentAlignment = Alignment.Center
                 ) {
@@ -120,143 +151,176 @@ fun RegisterScreen(
                         AsyncImage(
                             model = imageUri,
                             contentDescription = "Foto de Perfil",
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier.fillMaxSize().clip(CircleShape),
                             contentScale = ContentScale.Crop
                         )
                     } else {
-                        Icon(
-                            imageVector = Icons.Default.AddPhotoAlternate,
-                            contentDescription = "Añadir foto",
-                            modifier = Modifier.size(40.dp),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = "Crea tu Cuenta",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.ExtraBold,
-                    textAlign = TextAlign.Center
-                )
-
-                Text(
-                    text = "Empieza tu viaje de aprendizaje",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
-                )
-
-                AnimatedVisibility(
-                    visible = errorMessage.isNotEmpty(),
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
-                ) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.errorContainer,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
-                    ) {
-                        Text(
-                            text = errorMessage,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            style = MaterialTheme.typography.bodySmall,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(12.dp)
-                        )
-                    }
-                }
-
-                OutlinedTextField(
-                    value = nombre,
-                    onValueChange = { nombre = it },
-                    label = { Text("Tu Nombre") },
-                    leadingIcon = { Icon(Icons.Default.Badge, contentDescription = null) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    singleLine = true,
-                    isError = nombre.isBlank() && errorMessage.isNotEmpty()
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = correo,
-                    onValueChange = { correo = it },
-                    label = { Text("Correo Electrónico") },
-                    leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    singleLine = true,
-                    isError = correo.isBlank() && errorMessage.isNotEmpty()
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text("Contraseña") },
-                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                    trailingIcon = {
-                        val image = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
-                        IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                            Icon(imageVector = image, contentDescription = "Mostrar contraseña")
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Default.AddAPhoto,
+                                contentDescription = null,
+                                modifier = Modifier.size(32.dp),
+                                tint = Color(0xFF00E5FF)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("Foto", color = Color(0xFF00E5FF), style = MaterialTheme.typography.labelSmall)
                         }
-                    },
-                    visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    singleLine = true,
-                    isError = password.length < 6 && errorMessage.isNotEmpty()
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Button(
-                    onClick = {
-                        viewModel.registerUser(nombre, correo, password, imageUri)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    enabled = !isLoading,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
-                    } else {
-                        Text(
-                            text = "Registrarme",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
                     }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                TextButton(
-                    onClick = onNavigateToLogin
-                ) {
-                    Text(
-                        text = "¿Ya tienes cuenta? Inicia sesión",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.SemiBold
-                    )
                 }
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Toca para elegir foto de perfil", color = Color(0xFF80CBC4), style = MaterialTheme.typography.labelSmall)
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // Contenedor Glass
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(32.dp),
+                color = Color.White.copy(alpha = 0.05f),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Error
+                    AnimatedVisibility(
+                        visible = errorMessage.isNotEmpty(),
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
+                        Surface(
+                            color = Color(0xFFFF5252).copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.dp, Color(0xFFFF5252).copy(alpha = 0.5f)),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp)
+                        ) {
+                            Text(
+                                text = errorMessage,
+                                color = Color(0xFFFF8A80),
+                                style = MaterialTheme.typography.bodySmall,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                    }
+
+                    // Campo Nombre
+                    OutlinedTextField(
+                        value = nombre,
+                        onValueChange = { nombre = it },
+                        placeholder = { Text("Tu Nombre Completo", color = Color.White.copy(alpha = 0.5f)) },
+                        leadingIcon = { Icon(Icons.Default.Badge, contentDescription = null, tint = Color.White.copy(alpha = 0.7f)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF00E5FF),
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedContainerColor = Color.White.copy(alpha = 0.1f),
+                            unfocusedContainerColor = Color.White.copy(alpha = 0.05f),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Campo Correo
+                    OutlinedTextField(
+                        value = correo,
+                        onValueChange = { correo = it },
+                        placeholder = { Text("Correo Electrónico", color = Color.White.copy(alpha = 0.5f)) },
+                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = Color.White.copy(alpha = 0.7f)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF00E5FF),
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedContainerColor = Color.White.copy(alpha = 0.1f),
+                            unfocusedContainerColor = Color.White.copy(alpha = 0.05f),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Campo Contraseña
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        placeholder = { Text("Contraseña (mín. 6 caracteres)", color = Color.White.copy(alpha = 0.5f)) },
+                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = Color.White.copy(alpha = 0.7f)) },
+                        trailingIcon = {
+                            IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                                Icon(
+                                    imageVector = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                    contentDescription = null,
+                                    tint = Color.White.copy(alpha = 0.7f)
+                                )
+                            }
+                        },
+                        visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF00E5FF),
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedContainerColor = Color.White.copy(alpha = 0.1f),
+                            unfocusedContainerColor = Color.White.copy(alpha = 0.05f),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    // Botón de Registro con Degradado
+                    val buttonGradient = Brush.horizontalGradient(listOf(Color(0xFF00B4DB), Color(0xFF0083B0)))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(if (!isLoading) buttonGradient else Brush.horizontalGradient(listOf(Color.Gray, Color.Gray)))
+                            .clickable(enabled = !isLoading) {
+                                viewModel.registerUser(nombre, correo, password, imageUri)
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(28.dp), strokeWidth = 3.dp)
+                        } else {
+                            Text(
+                                text = "CREAR CUENTA",
+                                color = Color.White,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 1.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            TextButton(onClick = onNavigateToLogin) {
+                Text(
+                    text = "¿Ya tienes cuenta? Inicia sesión",
+                    color = Color(0xFF00E5FF),
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 15.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }

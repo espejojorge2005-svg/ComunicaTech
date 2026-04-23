@@ -1,12 +1,12 @@
 package com.Jorge.asistentevoz.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -15,14 +15,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.Jorge.asistentevoz.R
 import com.Jorge.asistentevoz.viewmodel.AuthState
 import com.Jorge.asistentevoz.viewmodel.AuthViewModel
 
@@ -39,7 +45,6 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
 
-    // Manejo de estado de éxito
     LaunchedEffect(authState) {
         if (authState is AuthState.Success) {
             val successState = authState as AuthState.Success
@@ -48,192 +53,202 @@ fun LoginScreen(
         }
     }
 
-    // Fondo degradado más premium
-    val fondoDegradado = Brush.verticalGradient(
+    // Un fondo dinámico y ultra premium (Tonos oscuros y púrpuras/azules)
+    val backgroundGradient = Brush.verticalGradient(
         colors = listOf(
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-            MaterialTheme.colorScheme.background
+            Color(0xFF0F2027),
+            Color(0xFF203A43),
+            Color(0xFF2C5364)
         )
     )
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(fondoDegradado)
-            .padding(24.dp),
+            .background(backgroundGradient)
+            .padding(horizontal = 24.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Contenedor principal con sombra tipo tarjeta
-        Surface(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(32.dp),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-            shadowElevation = 16.dp
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            // Logo oficial de la marca ComunicaTech
+            Image(
+                painter = painterResource(id = R.drawable.logo_comunicatech),
+                contentDescription = "Logo ComunicaTech",
+                modifier = Modifier.size(120.dp),
+                contentScale = ContentScale.Fit
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Text(
+                text = "ComunicaTech",
+                style = MaterialTheme.typography.displaySmall,
+                color = Color.White,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 1.sp
+            )
+            
+            Text(
+                text = "Hacemos visible tu voz.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.White.copy(alpha = 0.65f),
+                fontWeight = FontWeight.Light,
+                modifier = Modifier.padding(top = 6.dp, bottom = 40.dp)
+            )
+
+            // Contenedor de formulario tipo "Glass"
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(32.dp),
+                color = Color.White.copy(alpha = 0.05f),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
             ) {
-                // Ícono Superior
-                Surface(
-                    shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(80.dp),
-                    shadowElevation = 8.dp
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        modifier = Modifier.padding(20.dp),
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
+                    
+                    var errorMessage = ""
+                    var showResendButton = false
+                    
+                    if (authState is AuthState.Error) {
+                        errorMessage = (authState as AuthState.Error).message
+                    } else if (authState is AuthState.ErrorVerificationNeeded) {
+                        errorMessage = (authState as AuthState.ErrorVerificationNeeded).message
+                        showResendButton = true
+                    }
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = "Bienvenido",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.ExtraBold,
-                    textAlign = TextAlign.Center
-                )
-
-                Text(
-                    text = "Nos alegra verte de nuevo",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
-                )
-
-                // Mensaje de Error (Animado)
-                var errorMessage = ""
-                var showResendButton = false
-                
-                if (authState is AuthState.Error) {
-                    errorMessage = (authState as AuthState.Error).message
-                } else if (authState is AuthState.ErrorVerificationNeeded) {
-                    errorMessage = (authState as AuthState.ErrorVerificationNeeded).message
-                    showResendButton = true
-                }
-
-                AnimatedVisibility(
-                    visible = errorMessage.isNotEmpty(),
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
-                ) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.errorContainer,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                    AnimatedVisibility(
+                        visible = errorMessage.isNotEmpty(),
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
                     ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                        Surface(
+                            color = Color(0xFFFF5252).copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.dp, Color(0xFFFF5252).copy(alpha = 0.5f)),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp)
                         ) {
-                            Text(
-                                text = errorMessage,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                style = MaterialTheme.typography.bodySmall,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(12.dp)
-                            )
-                            if (showResendButton) {
-                                TextButton(
-                                    onClick = { viewModel.resendVerificationEmail(correo, password) },
-                                    modifier = Modifier.padding(bottom = 8.dp)
-                                ) {
-                                    Text(
-                                        text = "Reenviar correo de verificación",
-                                        color = MaterialTheme.colorScheme.onErrorContainer,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = errorMessage,
+                                    color = Color(0xFFFF8A80),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(12.dp)
+                                )
+                                if (showResendButton) {
+                                    TextButton(
+                                        onClick = { viewModel.resendVerificationEmail(correo, password) },
+                                        modifier = Modifier.padding(bottom = 8.dp)
+                                    ) {
+                                        Text(
+                                            text = "Reenviar verificación",
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                // --- CAMPO DE CORREO ---
-                OutlinedTextField(
-                    value = correo,
-                    onValueChange = { correo = it },
-                    label = { Text("Correo Electrónico") },
-                    leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    singleLine = true,
-                    isError = correo.isBlank() && errorMessage.isNotEmpty()
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // --- CAMPO DE CONTRASEÑA ---
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text("Contraseña") },
-                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                    trailingIcon = {
-                        val image = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
-                        IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                            Icon(imageVector = image, contentDescription = "Mostrar contraseña")
-                        }
-                    },
-                    visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    singleLine = true,
-                    isError = password.isBlank() && errorMessage.isNotEmpty()
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // --- BOTÓN PRINCIPAL ---
-                Button(
-                    onClick = {
-                        viewModel.loginUser(correo, password)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    enabled = authState !is AuthState.Loading,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-                ) {
-                    if (authState is AuthState.Loading) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
-                    } else {
-                        Text(
-                            text = "Iniciar Sesión",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                    // Campo de Correo Moderno
+                    OutlinedTextField(
+                        value = correo,
+                        onValueChange = { correo = it },
+                        placeholder = { Text("Correo Electrónico", color = Color.White.copy(alpha = 0.5f)) },
+                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = Color.White.copy(alpha = 0.7f)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF00E5FF),
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedContainerColor = Color.White.copy(alpha = 0.1f),
+                            unfocusedContainerColor = Color.White.copy(alpha = 0.05f),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
                         )
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Campo de Contraseña Moderno
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        placeholder = { Text("Contraseña", color = Color.White.copy(alpha = 0.5f)) },
+                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = Color.White.copy(alpha = 0.7f)) },
+                        trailingIcon = {
+                            val image = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                            IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                                Icon(imageVector = image, contentDescription = "Mostrar", tint = Color.White.copy(alpha = 0.7f))
+                            }
+                        },
+                        visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF00E5FF),
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedContainerColor = Color.White.copy(alpha = 0.1f),
+                            unfocusedContainerColor = Color.White.copy(alpha = 0.05f),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    // Botón de Inicio con Degradado
+                    val buttonGradient = Brush.horizontalGradient(listOf(Color(0xFF00B4DB), Color(0xFF0083B0)))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(buttonGradient)
+                            .clickable(enabled = authState !is AuthState.Loading) {
+                                viewModel.loginUser(correo, password)
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (authState is AuthState.Loading) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(28.dp), strokeWidth = 3.dp)
+                        } else {
+                            Text(
+                                text = "INICIAR SESIÓN",
+                                color = Color.White,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 1.sp
+                            )
+                        }
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-                // --- BOTÓN PARA CAMBIAR MODO ---
-                TextButton(
-                    onClick = onNavigateToRegister
-                ) {
-                    Text(
-                        text = "¿No tienes cuenta? Regístrate aquí",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+            TextButton(onClick = onNavigateToRegister) {
+                Text(
+                    text = "¿Eres nuevo? Crea una cuenta ahora",
+                    color = Color(0xFF00E5FF),
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 15.sp
+                )
             }
         }
     }
